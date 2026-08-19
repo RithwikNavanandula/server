@@ -10,7 +10,9 @@ if not exist "venv\Scripts\python.exe" (
   pause
   exit /b 1
 )
-echo Starting AI CCTV Server on http://0.0.0.0:5000
+if not defined PORT set "PORT=5000"
+echo Starting AI CCTV Server on http://0.0.0.0:%PORT%
 echo CLOUD_URL=%CLOUD_URL%
+echo PORT=%PORT%
 "venv\Scripts\python.exe" app.py
 pause

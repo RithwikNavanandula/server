@@ -14,6 +14,25 @@ $VenvDir = Join-Path $ServerDir 'venv'
 $ReqFile = Join-Path $ServerDir 'requirements.txt'
 $Python = $null
 
+function Test-PortAvailable($port) {
+    try {
+        $conn = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+        return ($null -eq $conn)
+    } catch {
+        return $false
+    }
+}
+
+function Find-FreePort($startPort = 5000, $maxPort = 5050) {
+    for ($p = $startPort; $p -le $maxPort; $p++) {
+        if (Test-PortAvailable $p) {
+            return $p
+        }
+    }
+    throw "No free TCP port found between $startPort and $maxPort."
+}
+
+
 function Write-Step($n, $msg) {
     Write-Host ""
     Write-Host "[$n] $msg" -ForegroundColor Cyan
@@ -81,15 +100,56 @@ Write-Host "  Installing remaining requirements (torch already installed — wil
 # --upgrade-strategy only-if-needed avoids pulling a second CUDA torch from PyPI
 & $Pip install --upgrade-strategy only-if-needed -r $ReqFile
 
-Write-Step 4 "Writing .env ..."
+Write-Step 4 "Configuring .env and selecting server port ..."
+
 $EnvFile = Join-Path $ServerDir '.env'
 $defaultCloud = 'https://rishi01.pythonanywhere.com'
-$defaultSecret = 'change-me-shared-with-windows-server'
+
 if (Test-Path $EnvFile) {
-    Write-Host "  .env exists — keeping it" -ForegroundColor Yellow
+    Write-Host "  .env exists — keeping existing configuration" -ForegroundColor Yellow
+
+    $envLines = Get-Content $EnvFile
+    $existingPort = $null
+
+    foreach ($line in $envLines) {
+        if ($line -match '^\s*PORT\s*=\s*(\d+)\s*$') {
+            $existingPort = [int]$Matches[1]
+            break
+        }
+    }
+
+    if ($existingPort -and (Test-PortAvailable $existingPort)) {
+        $SelectedPort = $existingPort
+        Write-Host "  Existing PORT=$SelectedPort is available" -ForegroundColor Green
+    } else {
+        if ($existingPort) {
+            Write-Host "  Existing PORT=$existingPort is already in use" -ForegroundColor Yellow
+        }
+
+        $SelectedPort = Find-FreePort 5000 5050
+        Write-Host "  Selected free port: $SelectedPort" -ForegroundColor Green
+
+        $updated = $false
+        $newLines = foreach ($line in $envLines) {
+            if ($line -match '^\s*PORT\s*=') {
+                $updated = $true
+                "PORT=$SelectedPort"
+            } else {
+                $line
+            }
+        }
+
+        if (-not $updated) {
+            $newLines += "PORT=$SelectedPort"
+        }
+
+        $newLines | Set-Content -Path $EnvFile -Encoding UTF8
+    }
 } else {
     $cloud = Read-Host "  PythonAnywhere / cloud URL [$defaultCloud]"
-    if ([string]::IsNullOrWhiteSpace($cloud)) { $cloud = $defaultCloud }
+    if ([string]::IsNullOrWhiteSpace($cloud)) {
+        $cloud = $defaultCloud
+    }
 
     $edgeSecret = Read-Host "  EDGE_SYNC_SECRET (must match cloud)"
     if ([string]::IsNullOrWhiteSpace($edgeSecret)) {
@@ -101,25 +161,31 @@ if (Test-Path $EnvFile) {
         throw "JWT_SECRET is required."
     }
 
-    @"
+    $SelectedPort = Find-FreePort 5000 5050
+
+@"
 CLOUD_URL=$cloud
 EDGE_SYNC_SECRET=$edgeSecret
 JWT_SECRET=$jwtSecret
 EDGE_FRAME_FPS=3
 ML_DEVICE=cpu
 MODEL_DIR=$ModelsDir
+PORT=$SelectedPort
 "@ | Set-Content -Path $EnvFile -Encoding UTF8
-    Write-Host "  Wrote $EnvFile" -ForegroundColor Green
+
+    Write-Host "  Created .env with PORT=$SelectedPort" -ForegroundColor Green
 }
 
-Write-Step 5 "Firewall port 5000 ..."
+Write-Host "  Selected server port: $SelectedPort" -ForegroundColor Green
+
+Write-Step 5 "Firewall port $SelectedPort ..."
 try {
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     if ($isAdmin) {
-        New-NetFirewallRule -DisplayName "AI CCTV Server" -Direction Inbound -Protocol TCP -LocalPort 5000 -Action Allow -ErrorAction SilentlyContinue | Out-Null
-        Write-Host "  OK" -ForegroundColor Green
+        New-NetFirewallRule -DisplayName "AI CCTV Server $SelectedPort" -Direction Inbound -Protocol TCP -LocalPort $SelectedPort -Action Allow -ErrorAction SilentlyContinue | Out-Null
+        Write-Host "  TCP $SelectedPort allowed" -ForegroundColor Green
     } else {
-        Write-Host "  Not admin — open TCP 5000 manually if needed" -ForegroundColor Yellow
+        Write-Host "  Not admin — open TCP $SelectedPort manually if needed" -ForegroundColor Yellow
     }
 } catch {
     Write-Host "  Skipped: $_" -ForegroundColor Yellow
@@ -133,8 +199,8 @@ Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
 Write-Host "  SETUP COMPLETE — double-click start.bat" -ForegroundColor Green
 Write-Host "======================================================" -ForegroundColor Green
-Write-Host "  Edit server\.env for CLOUD_URL / EDGE_SYNC_SECRET / JWT_SECRET"
-Write-Host "  Cloud EDGE_API_URL must use a publicly reachable HTTPS URL for this server"
+Write-Host "  Server port: $SelectedPort"
+Write-Host "  Cloud EDGE_API_URL must ultimately point to a public HTTPS endpoint for this port"
 Write-Host "  Cloud login: demo@aicctv.com / demo123"
 Write-Host ""
 Pause
