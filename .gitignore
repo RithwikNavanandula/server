@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 models/
 app.py
+core.py
 # Virtual environments
 .venv/
 venv/
