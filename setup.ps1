@@ -83,7 +83,7 @@ Write-Host "  Installing remaining requirements (torch already installed — wil
 
 Write-Step 4 "Writing .env ..."
 $EnvFile = Join-Path $ServerDir '.env'
-$defaultCloud = 'https://YOUR_USERNAME.pythonanywhere.com'
+$defaultCloud = 'https://rishi01.pythonanywhere.com'
 $defaultSecret = 'change-me-shared-with-windows-server'
 if (Test-Path $EnvFile) {
     Write-Host "  .env exists — keeping it" -ForegroundColor Yellow
