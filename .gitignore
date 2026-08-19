@@ -1,0 +1,56 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files
+.env
+.env.*
+
+# Local configuration / runtime state
+*.log
+*.sqlite3
+*.db
+*.db-journal
+
+# Uploads and generated files
+uploads/
+recordings/
+media/
+output/
+cache/
+
+# Model files and large binaries
+*.pt
+*.pth
+*.bin
+*.onnx
+*.weights
+*.ckpt
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test / coverage artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Distribution / build artifacts
+build/
+dist/
+*.egg-info/
