@@ -118,33 +118,22 @@ if (Test-Path $EnvFile) {
         }
     }
 
-    if ($existingPort -and (Test-PortAvailable $existingPort)) {
-        $SelectedPort = $existingPort
-        Write-Host "  Existing PORT=$SelectedPort is available" -ForegroundColor Green
+    if ($existingPort) {
+    $SelectedPort = $existingPort
+
+    if (Test-PortAvailable $SelectedPort) {
+        Write-Host "  Keeping existing PORT=$SelectedPort (currently available)" -ForegroundColor Green
     } else {
-        if ($existingPort) {
-            Write-Host "  Existing PORT=$existingPort is already in use" -ForegroundColor Yellow
-        }
-
-        $SelectedPort = Find-FreePort 5000 5050
-        Write-Host "  Selected free port: $SelectedPort" -ForegroundColor Green
-
-        $updated = $false
-        $newLines = foreach ($line in $envLines) {
-            if ($line -match '^\s*PORT\s*=') {
-                $updated = $true
-                "PORT=$SelectedPort"
-            } else {
-                $line
-            }
-        }
-
-        if (-not $updated) {
-            $newLines += "PORT=$SelectedPort"
-        }
-
-        $newLines | Set-Content -Path $EnvFile -Encoding UTF8
+        Write-Host "  Keeping existing PORT=$SelectedPort (currently in use)" -ForegroundColor Yellow
+        Write-Host "  The setup will NOT change the configured port." -ForegroundColor Yellow
     }
+}
+else {
+    $SelectedPort = Find-FreePort 5000 5050
+    Write-Host "  No PORT configured. Selected free port: $SelectedPort" -ForegroundColor Green
+
+    Add-Content -Path $EnvFile -Value "PORT=$SelectedPort"
+}
 } else {
     $cloud = Read-Host "  PythonAnywhere / cloud URL [$defaultCloud]"
     if ([string]::IsNullOrWhiteSpace($cloud)) {
