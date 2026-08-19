@@ -90,11 +90,21 @@ if (Test-Path $EnvFile) {
 } else {
     $cloud = Read-Host "  PythonAnywhere / cloud URL [$defaultCloud]"
     if ([string]::IsNullOrWhiteSpace($cloud)) { $cloud = $defaultCloud }
-    $secret = Read-Host "  EDGE_SYNC_SECRET (must match cloud) [$defaultSecret]"
-    if ([string]::IsNullOrWhiteSpace($secret)) { $secret = $defaultSecret }
+
+    $edgeSecret = Read-Host "  EDGE_SYNC_SECRET (must match cloud)"
+    if ([string]::IsNullOrWhiteSpace($edgeSecret)) {
+        throw "EDGE_SYNC_SECRET is required."
+    }
+
+    $jwtSecret = Read-Host "  JWT_SECRET (must match cloud)"
+    if ([string]::IsNullOrWhiteSpace($jwtSecret)) {
+        throw "JWT_SECRET is required."
+    }
+
     @"
 CLOUD_URL=$cloud
-EDGE_SYNC_SECRET=$secret
+EDGE_SYNC_SECRET=$edgeSecret
+JWT_SECRET=$jwtSecret
 EDGE_FRAME_FPS=3
 ML_DEVICE=cpu
 MODEL_DIR=$ModelsDir
@@ -123,8 +133,8 @@ Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
 Write-Host "  SETUP COMPLETE — double-click start.bat" -ForegroundColor Green
 Write-Host "======================================================" -ForegroundColor Green
-Write-Host "  Edit server\.env for CLOUD_URL / EDGE_SYNC_SECRET"
-Write-Host "  Website Settings → Edge URL = http://THIS-PC-IP:5000"
+Write-Host "  Edit server\.env for CLOUD_URL / EDGE_SYNC_SECRET / JWT_SECRET"
+Write-Host "  Cloud EDGE_API_URL must use a publicly reachable HTTPS URL for this server"
 Write-Host "  Cloud login: demo@aicctv.com / demo123"
 Write-Host ""
 Pause
