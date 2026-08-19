@@ -9,8 +9,8 @@ env/
 ENV/
 
 # Environment files
-.env
-.env.*
+
+
 
 # Local configuration / runtime state
 *.log
