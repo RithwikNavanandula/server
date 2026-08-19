@@ -1,0 +1,31 @@
+# ============================================================
+# server/ — Edge (Windows ProLiant or Ubuntu laptop)
+# Install torch FIRST from the CPU wheel index, then this file.
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements.txt
+# ============================================================
+
+# Web
+flask>=3.0.0,<4
+flask-cors>=4.0.0
+gevent>=24.0.0
+pyjwt>=2.8.0
+werkzeug>=3.0.0
+
+# Vision + ML (torch installed separately — see header)
+opencv-python-headless>=4.9.0
+numpy>=1.26.0
+ultralytics>=8.0.0
+
+# Optional barcode / OCR
+pyzbar>=0.1.9
+pytesseract>=0.3.10
+pillow>=10.0.0
+
+# Reports (local edge API)
+reportlab>=4.0.0
+openpyxl>=3.1.0
+
+# Sync to cloud
+requests>=2.31.0
+python-dotenv>=1.0.0
