@@ -2,9 +2,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-models/
-app.py
-core.py
 # Virtual environments
 .venv/
 venv/
